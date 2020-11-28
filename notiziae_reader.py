@@ -1,3 +1,4 @@
+import os
 import time
 import telepot
 from telepot.loop import MessageLoop
@@ -5,95 +6,107 @@ from pprint import pprint
 from random import randint
 from termcolor import colored as clr
 
-directory=###########
+directory=NEWS
 
 def handle(msg):
-    global group_id
     global directory
+
+    if not os.path.exists(directory):
+        print(f"{directory} doesn't exists\nQuitting..")
+        quit()
 
     content_type, chat_type, chat_id = telepot.glance(msg)
 
-    if chat_type!="channel":
+    if chat_type!="channel":                    #This bot does not work in groups or private chats
         if content_type=="text":
             if "bottino" in msg["text"].lower():
                 bot.sendMessage(chat_id,"Questo Bot è configurato per lavorare nei canali attualmente, non nelle chat private o nei gruppi")
 
     else:
-        if content_type=="text":
+        try:
+            msg["edit_date"]
+            edit="_edit"
+            editing=True
+        except KeyError:
+            edit="_original"
+            editing=False
+
+        if content_type=="text":                                        #TEXT FILE FUNCTION
             print(clr("Saving a message...","green"))
-            name=msg["chat"]["title"]+"_"+str(msg["message_id"])+".txt"
-            file=open(directory+name,"w")
+            name="message_"+msg["chat"]["title"]+"_"+str(msg["message_id"])+edit+".txt"     #Save text
+            file=open(directory+name.replace(" ",""),"w")
             file.write(msg["text"])
             file.close()
 
-        elif content_type=="photo":
+        elif content_type=="photo":                                     #photo function
             print(clr("Saving a photo...","green"))
-            photo_name=msg["chat"]["title"]+"_"+str(msg["message_id"])+".jpg"
-            bot.download_file(msg["photo"][0]["file_id"], directory+photo_name)
-            try:
+            photo_name="photo_"+msg["chat"]["title"]+"_"+str(msg["message_id"])+edit+".jpg"
+            if editing==False:
+                bot.download_file(msg["photo"][0]["file_id"], directory+photo_name.replace(" ",""))
+            try:                                                        #If there is a caption
                 test=msg["caption"]
                 print(clr("Saving caption...","green"))
-                name="caption_"+str(msg["message_id"])+".txt"
-                file=open(directory+name,"w")
+                name="caption_"+msg["chat"]["title"]+"_"+str(msg["message_id"])+edit+".txt"
+                file=open(directory+name.replace(" ",""),"w")
                 file.write(msg["caption"])
                 file.close()
-            except KeyError:
+            except KeyError:                                            #If there is no caption
                 pass
 
-        elif content_type=="audio":
+        elif content_type=="audio":                                     #Audio function, same as the photo function
             print(clr("Saving an audio...","green"))
-            audio_name=msg["audio"]["file_name"]
-            bot.download_file(msg["audio"]["file_id"], directory+audio_name)
+            audio_name="audio_"+msg["chat"]["title"]+"_"+str(msg["message_id"])+edit+".mp3"
+            if editing==False:
+                bot.download_file(msg["audio"]["file_id"], directory+audio_name.replace(" ",""))
             try:
                 test=msg["caption"]
                 print(clr("Saving caption...","green"))
-                name="caption_"+str(msg["message_id"])+".txt"
-                file=open(directory+name,"w")
+                name="caption_"+msg["chat"]["title"]+"_"+str(msg["message_id"])+edit+".txt"
+                file=open(directory+name.replace(" ",""),"w")
                 file.write(msg["caption"])
                 file.close()
             except KeyError:
                 pass
 
-        elif content_type=="video":
+        elif content_type=="video":                                      #Video function
             print(clr("Saving a video...","green"))
-            video_name=msg["chat"]["title"]+"_"+str(msg["message_id"])+".mp4"
-            bot.download_file(msg["video"]["file_id"], directory+video_name)
+            video_name="video_"+msg["chat"]["title"]+"_"+str(msg["message_id"])+edit+".mp4"
+            if editing==False:
+                bot.download_file(msg["video"]["file_id"], directory+video_name.replace(" ",""))
             try:
                 test=msg["caption"]
                 print(clr("Saving caption...","green"))
-                name="caption_"+str(msg["message_id"])+".txt"
-                file=open(directory+name,"w")
+                name="caption_"+msg["chat"]["title"]+"_"+str(msg["message_id"])+edit+".txt"
+                file=open(directory+name.replace(" ",""),"w")
                 file.write(msg["caption"])
                 file.close()
             except KeyError:
                 pass
 
-        elif content_type=="document":
+        elif content_type=="document":                                      #Documents function
             print(clr("Saving a document...","green"))
-            doc_name=msg["document"]["file_name"]
-            extension=doc_name.split(sep=".")[-1]
-
-            doc_name=msg["chat"]["title"]+"_"+str(msg["message_id"])+"."+extension
-            bot.download_file(msg["document"]["file_id"], directory+doc_name)
+            doc_name="doc_"+msg["chat"]["title"]+"_"+str(msg["message_id"])+edit+".mp4"
+            if editing==False:
+                bot.download_file(msg["document"]["file_id"], directory+doc_name.replace(" ",""))
             try:
                 test=msg["caption"]
                 print(clr("Saving caption...","green"))
-                name="caption_"+str(msg["message_id"])+".txt"
-                file=open(directory+name,"w")
+                name="caption_"+msg["chat"]["title"]+"_"+str(msg["message_id"])+edit+".txt"
+                file=open(directory+name.replace(" ",""),"w")
                 file.write(msg["caption"])
                 file.close()
             except KeyError:
                 pass
 
-        else:
+        else:                                                                   #Useless messages such as voice, sticker, video message....
             print(clr(content_type,"red"))
 
-bot=telepot.Bot(TOKEN)
+bot=telepot.Bot(TOKEN)       #Bot definition
 bot_specs=bot.getMe()
 bot_name=bot_specs["first_name"]
 bot_id=bot_specs["id"]
 print(clr(f"{bot_name} [{bot_id}] ONLINE","cyan"))
-MessageLoop(bot, handle).run_as_thread()
+MessageLoop(bot, handle).run_as_thread()                                #Run main function
 
 while 1:
     time.sleep(10)

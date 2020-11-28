@@ -8,6 +8,7 @@ from selenium import webdriver
 from termcolor import colored
 from random import random
 from random import randint
+from discord.errors import HTTPException as HE
 import requests
 import time
 import datetime
@@ -18,13 +19,11 @@ import urllib.request
 import asyncio
 
 client=discord.Client()
-account=##############
-retr=0
+account="@governo_del_cambianiente"
 cnt=0
-pth=##############
-news=##############
-bin=##############
-on_msg_ready=False
+pth=MAIN
+news_path=NEWS
+bin_folder=BACKUP
 
 BCP=pth+"bcp.txt"
 IDF=pth+"channel_id.txt"
@@ -52,15 +51,14 @@ if os.path.isfile(BLG)==False:
     quit()
 
 async def main(id_channel=id_channel):
+    await client.wait_until_ready()
+    print(colored("BOTTINO_UPDATE: main function is ready!","yellow"))
     global last_link
     global pth
     global cnt
-    global retr
 
-    print("main function update")
     last_code=None
     channel=client.get_channel(id_channel)
-    personal=client.get_channel(772064141883736078)
     def DataGen(source):
         TW=None
         AW=None
@@ -150,7 +148,7 @@ async def main(id_channel=id_channel):
 
                 try:
                     driver.get(link)
-                    soup = BeautifulSoup(driver.page_source, 'lxml')
+                    soup = BS(driver.page_source, 'lxml')
                     img = soup.find('img', class_='FFVAD')
                     img_url = img['src']
                     r = requests.get(img_url)
@@ -186,46 +184,109 @@ async def main(id_channel=id_channel):
         BL.close()
         quit()
 
-def news():
-    global news
-    global bin
+async def news():
+    global news_path
+    global bin_folder
     global id_news
 
-    channel=client.get_channel()
-    call="@everyone\n"
+    work=True
+    channel=client.get_channel(id_news)
+    incipit="@everyone\n"
+    patch="\n\nFornito da <https://t.me/notiziae>"
+    existing=os.listdir(bin_folder)
+
+    await client.wait_until_ready()
+    print(colored("BOTTINO_UPDATE: news function is ready!","yellow"))
+
     while True:
-        if len(os.listdir(path))!=0:
-            for file in os.listdir(path):
-                basename=file.split(sep=".")[0]
-                extension=file.split(sep=".")[1]
+        try:
+            if len(os.listdir(news_path))!=0:
+                for file in os.listdir(news_path):
+                    splitted_name=file.split(sep=".")
+                    basename=splitted_name[0]
+                    extension=splitted_name[1]
 
-                if extension=="txt" and basename[:7]!="caption":
-                    with open(path+file,"r") as f:
-                        content=f.read()
-                        await channel.send(call+content)
+                    msg_type=basename.split(sep="_")[0]
+                    channel_name=basename.split(sep="_")[1].replace(" ","")
+                    index=basename.split(sep="_")[2]
+                    edited=basename.split(sep="_")[3]
 
-                if extension!="txt":
-                    index=basename.split(sep="_")[3]
-                    try:
-                        caption="caption_"+index+".txt"
-                        with open(path+caption,"r") as f:
-                            content=f.read()
-                            await channel.send(call+content, file=discord.File(path+file))
-                    except FileNotFoundError:
-                        await channel.send(call, file=discord.File(path+file))
+                    if file in existing:
+                        os.remove(news_path+file)
+                        break
 
-                query=f"mv {path+file} {bin+file}"
-                os.system(query)
+                    if edited=="original":
+                        report="["+str(datetime.datetime.now())+"] NEWS PUBLISHED index=({index})\n"
+                        BL=open(BLG,"a")
+                        BL.write(report)
+                        BL.close()
 
-                BL=open(BLG,"a")
-                report="["+str(datetime.datetime.now())+"] "+"NEWS POSTATA!"
-                BL.write(report)
-                BL.close()
+                        if msg_type=="message":
+                            with open(news_path+file,"r") as f:
+                                message = await channel.send(incipit+f.read().replace("@notiziae","<https://t.me/notiziae>"))
+                                f.close()
+                                os.replace(f"{news_path}{file}", f"{bin_folder}{index}_{message.id}.txt")
 
-        await asyncio.sleep(10)
+                        else:
+                            if msg_type!="caption":
+                                caption_file=f"{news_path}caption_{channel_name}_{index}_{edited}.txt"
+                                if os.path.exists(caption_file)==True:
+                                    caption=open(caption_file,"r")
+                                    message = await channel.send(incipit+caption.read().replace("@notiziae","<https://t.me/notiziae>"), file=discord.File(f"{news_path}{file}"))
+                                    caption.close()
+                                    os.replace(caption_file, f"{bin_folder}{index}_{message.id}.txt")
+                                    os.replace(f"{news_path}{file}", f"{bin_folder}{file}")
+                                else:
+
+                                    message = await channel.send(incipit+patch, file=discord.File(f"{news_path}{file}"))
+                                    os.remove(f"{news_path}{file}")
+                    else:
+                        report="["+str(datetime.datetime.now())+"] NEWS EDITED index=({index})\n"
+                        BL=open(BLG,"a")
+                        BL.write(report)
+                        BL.close()
+
+                        for deleted_file in os.listdir(bin_folder):
+                            splitted_name=deleted_file.split(sep=".")
+                            basename=splitted_name[0]
+                            extension=splitted_name[1]
+
+
+                            if extension=="txt":
+                                fetch_index=basename.split(sep="_")[0]
+                                msg_id=basename.split(sep="_")[1]
+
+                            try:
+                                fetch_index=int(fetch_index)
+                                work=True
+                            except ValueError:
+                                work=False
+
+                            if work:
+                                try:
+                                    if int(fetch_index)==int(index):
+                                        target = await channel.fetch_message(int(msg_id))
+                                        edit=open(news_path+file,"r")
+                                        await target.edit(content=incipit+edit.read().replace("@notiziae","<https://t.me/notiziae>"))
+                                        edit.close()
+                                        os.remove(news_path+file)
+
+                                except FileNotFoundError:
+                                    continue
+            await asyncio.sleep(5)
+
+        except Exception:
+            print(colored("An error occured, check logs for further infos","red"))
+            exc_info=sys.exc_info()
+            err=traceback.format_exception(*exc_info)
+            error_log="["+str(datetime.datetime.now())+"] "+str(err[-1])
+            BL=open(BLG,"a")
+            BL.write(error_log)
+            BL.close()
+            quit()
+
 
 def starter():
-    print(colored("main function ready","yellow"))
     client.loop.create_task(main())
     client.loop.create_task(news())
 
@@ -242,18 +303,14 @@ async def on_ready():
 
 @client.event
 async def on_message(msg):
-    global on_msg_ready
-    if on_msg_ready==False:
-        print(colored("on_message function ready","yellow"))
-    on_msg_ready=True
     chid=int(str(msg).split()[3][3:])
     channel=client.get_channel(chid)
     if client.user.id!=msg.author.id:
         if msg.content.lower()==".link" or msg.content.lower()=="/link":
             global last_link
             global account
-            facebook=#####
-            telegram=#######
+            facebook=LINK
+            telegram=LINK
             page_link="https://www.instagram.com/{}/".format(account.replace("@",""))
 
             links= f"Instagram:   <{page_link}>\n"
