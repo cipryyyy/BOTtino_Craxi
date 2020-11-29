@@ -24,6 +24,9 @@ cnt=0
 pth=MAIN
 news_path=NEWS
 bin_folder=BACKUP
+authorized=CHANNEL_NAME
+sleeping=False
+
 
 BCP=pth+"bcp.txt"
 IDF=pth+"channel_id.txt"
@@ -56,6 +59,9 @@ async def main(id_channel=id_channel):
     global last_link
     global pth
     global cnt
+    global sleeping
+    global BLG
+    global account
 
     last_code=None
     channel=client.get_channel(id_channel)
@@ -96,11 +102,30 @@ async def main(id_channel=id_channel):
         href=source.split()[1]
         partial_link=href[6:-1]
         return partial_link
-    global BLG
-    global account
 
     try:
         while True:
+            hour=int(datetime.datetime.now().strftime("%H"))
+            if hour<9 or hour>=23:
+                if sleeping==True:
+                    break
+                else:
+                    print(colored("+++NIGHT MODE STARTED+++","yellow","on_red"))
+                    sleeping=True
+                    report="["+str(datetime.datetime.now())+"] Night mode started\n"
+                    BL=open(BLG,"a")
+                    BL.write(report)
+                    BL.close()
+                    break
+            else:
+                if sleeping==True:
+                    print(colored("+++NIGHT MODE ENDED+++","yellow","on_red"))
+                    sleeping=False
+                    report="["+str(datetime.datetime.now())+"] Night mode ended\n"
+                    BL=open(BLG,"a")
+                    BL.write(report)
+                    BL.close()
+
             cnt+=1
             page_link="https://www.instagram.com/{}/".format(account.replace("@",""))
             options=Options()
@@ -133,7 +158,7 @@ async def main(id_channel=id_channel):
                 BL=open(BLG,"a")
                 BL.write(news)
                 BL.close()
-                print(colored(f"[{datetime.datetime.now()}]###!NEW POST!###","green"))
+                print(colored(f"[{datetime.datetime.now()}] ###!NEW POST!###","green"))
                 last_link=link
                 backup=open(BCP,"w")
                 backup.write(last_link)
