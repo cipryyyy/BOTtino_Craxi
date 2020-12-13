@@ -17,13 +17,13 @@ import urllib.request
 import asyncio
 
 client=discord.Client()
-account=
+account="@governo_del_cambianiente"
 cnt=0
-pth= PATH
-news_path= PATH
-bin_folder= PATH
-announce_folder= PATH
-authorized= PATH
+pth="/home/server/bots_file/"
+news_path="/home/server/notiziae/new/"
+bin_folder="/home/server/notiziae/bin/"
+announce_folder="/home/server/BOTtino/bots_file/announce/"
+authorized="NOTIZIÆ"
 sleeping=False
 
 BCP=pth+"bcp.txt"
@@ -59,10 +59,11 @@ def Log(type, msg):
         f.write(report)
         f.close()
 
-async def Main(id_channel=id_channel):
+async def main(id_channel=id_channel, manual=False):
     await client.wait_until_ready()
-    print(colored("BOTTINO_UPDATE: main function is ready!","yellow"))
-    Log(0,"main function loaded")
+    if manual==False:
+        print(colored("BOTTINO_UPDATE: main function is ready!","yellow"))
+    log(0,"main function loaded")
     global last_link
     global pth
     global cnt
@@ -192,6 +193,10 @@ async def Main(id_channel=id_channel):
                     driver.close()
                     comm=f"@everyone NUOVO POST\n{account}\n{caption}\n\nLINK AL POST:\n{link}"
                     await channel.send(comm, file=discord.File(pth+name))
+                    if manual==True:
+                        print("Manual task done")
+                        break
+
                 if cnt==6:
                     Log(0,"BREAK")
                     cnt=0
@@ -199,6 +204,11 @@ async def Main(id_channel=id_channel):
                 await asyncio.sleep(15*60+random()*180)
             else:
                 await asyncio.sleep(120)
+
+    except NSEE:
+        log(3,"main function stopped, too many requests")
+        print(colored("BOTTINO_UPDATE: main function stopped!","yellow"))
+        await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening, name=authoriz>
 
     except Exception:
         print(colored("An error occured, check logs for further infos","red"))
@@ -346,8 +356,8 @@ async def on_message(msg):
             Log(4,"link")
             global last_link
             global account
-            facebook=LINK
-            telegram=LINK
+            facebook="https://www.facebook.com/governodelcambianiente"
+            telegram="https://t.me/governo_del_cambianiente"
             page_link="https://www.instagram.com/{}/".format(account.replace("@",""))
 
             links= f"Instagram:   <{page_link}>\n"
@@ -355,5 +365,16 @@ async def on_message(msg):
             links+=f"Telegram:    <{telegram}>\n"
             links+=f"Ultimo post: <{last_link}>"
             await channel.send(f"{msg.author.mention} LINK UTILI:\n{links}")
+
+        if msg.content.lower()==".manual" or msg.content.lower()=="/manual":
+            global cnt
+            if msg.author.id==364112598708387840:
+                print("Ok")
+                log(4,"manual link search")
+                print(msg)
+                client.loop.create_task(main(manual=True))
+                cnt=6
+            else:
+                pass
 
 client.run(TOKEN)
