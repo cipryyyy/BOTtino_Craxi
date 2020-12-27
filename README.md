@@ -25,10 +25,8 @@ __I comandi preceduti da '!' non sono utilizzabili da tutti gli utenti dato che 
 ### Comandi disponibili
 Lista dei comandi disponibili:
 * ```link``` Mostra tutti i link utili della pagina.
-* ❗ ```manual``` Esegue la funzione main solo una volta (_2_)
+* ❗ ```manual``` Esegue la funzione main solo una volta (_1_)
 
 ![BOTtino Craxi](http://subwork.altervista.org/photo_2020-11-28_15-55-53.jpg)
 
-(1) _Attualmente i messaggi possono essere scritti solamente dal programmatore manualmente, verrà aggiunta più avanti la funzione_ ```annuncio```_._
-
-(2) _La pagina viene scansionata solo ogni 10-12 minuti (più eventuali pause) per evitare il ban temporaneo della rete, con questo comando viene eseguita una scansione aggiuntiva seguita da una pausa prolungata._
+(1) _La pagina viene scansionata solo ogni 10-12 minuti (più eventuali pause) per evitare il ban temporaneo della rete, con questo comando viene eseguita una scansione aggiuntiva seguita da una pausa prolungata._
