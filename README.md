@@ -8,9 +8,6 @@ BOTtino Craxi svolge quattro funzioni:
 * #### Funzione news
 
   Legge le notizie dal canale telegram "[__NOTIZIÆ__](https://t.me/notiziae)";
-* #### Funzione announce _(beta)_
-
-  Invia messaggi scritti da terze parti (_1_);
 
 * #### Funzione on_message
 
