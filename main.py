@@ -19,17 +19,35 @@ import asyncio
 client=discord.Client()
 account="@governo_del_cambianiente"
 cnt=0
-pth="/home/server/bots_file/"
-news_path="/home/server/notiziae/new/"
-bin_folder="/home/server/notiziae/bin/"
-announce_folder="/home/server/BOTtino/bots_file/announce/"
+pth="/home/bottino/bots_file/"
+news_path="/home/bottino/notiziae/new/"
+bin_folder="/home/bottino/notiziae/bin/"
+announce_folder="/home/bottino/bots_file/announce/"
 authorized="NOTIZIÆ"
 sleeping=False
+#last_msg=None
 
 BCP=pth+"bcp.txt"
 IDF=pth+"channel_id.txt"
 BLG=pth+"bots_log.txt"
+MOD=pth+"admin.txt"
+POS=pth+"last_pos.txt"
 
+if os.path.isfile(POS):
+    src=open(POS,"r")
+    last_pos=float(src.read())
+    src.close()
+else:
+    print("No positivity file, quitting")
+    quit()
+if os.path.isfile(MOD)==True:
+    src=open(MOD,"r").readlines()
+    mod_id=src[0]
+    mod_name=src[1]
+    mod_type=src[2]
+else:
+    print("No admin file, quitting")
+    quit()
 if os.path.isfile(BCP)==True:
     src=open(BCP,"r")
     last_link=src.read()
@@ -51,7 +69,7 @@ if os.path.isfile(BLG)==False:
     print("No log file, quitting")
     quit()
 
-def Log(type, msg):
+def log(type, msg):
     types=["SYSTEM","POST","SECURITY","BUG","QUERY"]
 
     report=f"[{datetime.datetime.now()}] {types[type]} -> {msg}\n"
@@ -121,7 +139,7 @@ async def main(id_channel=id_channel, manual=False):
                     await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening, name=authorized))
                     print(colored("+++NIGHT MODE STARTED+++","yellow","on_red"))
                     sleeping=True
-                    Log(0,"night mode started")
+                    log(0,"night mode started")
 
             else:
                 if sleeping==True:
@@ -129,7 +147,7 @@ async def main(id_channel=id_channel, manual=False):
                     print(colored("+++NIGHT MODE ENDED+++","yellow","on_red"))
                     sleeping=False
                     cnt=0
-                    Log(0,"night mode ended")
+                    log(0,"night mode ended")
             if sleeping==False:
                 cnt+=1
                 page_link="https://www.instagram.com/{}/".format(account.replace("@",""))
@@ -159,7 +177,7 @@ async def main(id_channel=id_channel, manual=False):
                 browser.quit()
 
                 if link!=last_link:
-                    Log(1,f"New post ({str(link)})")
+                    log(1,f"New post ({str(link)})")
                     print(colored(f"[{datetime.datetime.now()}]###!NEW POST!###","green"))
 
                     last_link=link
@@ -196,28 +214,30 @@ async def main(id_channel=id_channel, manual=False):
                     if manual==True:
                         print("Manual task done")
                         break
-
                 if cnt==6:
-                    Log(0,"BREAK")
+                    log(0,"BREAK")
                     cnt=0
                     await asyncio.sleep(randint(4,20)*60)
                 await asyncio.sleep(15*60+random()*180)
             else:
                 await asyncio.sleep(120)
-
     except NSEE:
         log(3,"main function stopped, too many requests")
         print(colored("BOTTINO_UPDATE: main function stopped!","yellow"))
-        await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening, name=authoriz>
+        await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening, name=authorized))
+        await asyncio.sleep(7200)              #Stop per tre ore
+        await client.change_presence(status=discord.Status.online, activity=discord.Activity(type=discord.ActivityType.watching, name=account))
+
 
     except Exception:
         print(colored("An error occured, check logs for further infos","red"))
         exc_info=sys.exc_info()
         err=traceback.format_exception(*exc_info)
-        Log(3,str(err[-1]).replace("\n",""))
+        log(3,str(err[-1]).replace("\n",""))
         quit()
 
-async def News():
+async def news():
+    global POS
     global news_path
     global bin_folder
     global id_news
@@ -231,7 +251,7 @@ async def News():
 
     await client.wait_until_ready()
     print(colored("BOTTINO_UPDATE: news function is ready!","yellow"))
-    Log(0,"news function loaded")
+    log(0,"news function loaded")
 
     while True:
 
@@ -249,7 +269,7 @@ async def News():
 
                     if channel_name!=authorized:
                         print(colored(f"SECURITY: {channel_name} tried to send messages to BOTtino","red"))
-                        Log(2,f"{channel_name} tried to send message")
+                        log(2,f"{channel_name} tried to send message")
                         os.remove(news_path+file)
                         continue
 
@@ -258,9 +278,40 @@ async def News():
                         continue
 
                     if edited=="original":
-                        Log(1,f"news indexed {index} published")
+                        log(1,f"news indexed {index} published")
 
                         if msg_type=="message":
+                            srcfile=open(news_path+file,"r")
+                            rfile=srcfile.read()
+                            lines=rfile.split(sep="\n")
+                            values=[]
+
+                            if "covid" in rfile.split()[0].lower():
+                                for i in range(2):
+                                    datas=rfile.split(sep="\n\n")[i]
+                                    for data in datas.split():
+                                        try:
+                                            data=int(data.replace(".","").replace(",","").replace("+","").replace("-",""))
+                                            values.append(data)
+                                        except ValueError:
+                                            continue
+                                pos=round((values[0]/values[4])*100,1)
+
+                            last_pos_src=open(POS,"r")
+                            last_pos=float(last_pos_src.read())
+                            last_post_src.close()
+
+                            lines.insert(3,f"Positività: {pos}% ({round(pos-last_pos,1):+})")
+
+                            saving=open(POS,"w")
+                            saving.write(pos)
+                            saving.close()
+
+                            wfile=open(news_path+file,"w")
+                            for line in lines:
+                                wfile.write(line+"\n")
+                            wfile.close()
+
                             with open(news_path+file,"r") as f:
                                 message = await channel.send(incipit+f.read().replace("@notiziae","<https://t.me/notiziae>"))
                                 f.close()
@@ -276,11 +327,10 @@ async def News():
                                     os.replace(caption_file, f"{bin_folder}{index}_{message.id}.txt")      #caption migration
                                     os.replace(f"{news_path}{file}", f"{bin_folder}{file}")                #file migration
                                 else:
-
                                     message = await channel.send(incipit+patch, file=discord.File(f"{news_path}{file}"))
                                     os.remove(f"{news_path}{file}")
                     else:
-                        Log(1,f"news indexed {index} edited")
+                        log(1,f"news indexed {index} edited")
 
                         for deleted_file in os.listdir(bin_folder):
                             splitted_name=deleted_file.split(sep=".")
@@ -309,40 +359,24 @@ async def News():
 
                                 except FileNotFoundError:
                                     continue
-            await asyncio.sleep(5)
+            await asyncio.sleep(10)
 
         except Exception:
             print(colored("An error occured, check logs for further infos","red"))
             exc_info=sys.exc_info()
             err=traceback.format_exception(*exc_info)
-            Log(3,str(err[-1]).replace("\n",""))
+            log(3,str(err[-1]).replace("\n",""))
 
             quit()
 
-async def Announce(id_channel=id_channel):
-    global announce_folder
-    channel=client.get_channel(id_channel)
-
-    print(colored("BOTTINO_UPDATE: announce function is ready!","yellow"))
-    Log(0,"announce function loaded")
-
-    while true:
-        for file in os.listdir(announce_folder):
-            with open(announce_folder+file,"w") as f:
-                channel.send(f.read())
-                Log(1,"announce published")
-            os.remove(announce_folder+file)
-        await asyncio.sleep(5)
-
 def starter():
-    client.loop.create_task(Main())
-    client.loop.create_task(News())
-    client.loop.create_task(Announce())
+    client.loop.create_task(main())
+    client.loop.create_task(news())
 
 @client.event
 async def on_ready():
     global id_channel
-    Log(0,f"BOT ONLINE")
+    log(0,f"BOT ONLINE")
     print(colored(f"Logged in as {client.user.name} [{client.user.id}]","cyan"))
     starter()
     await client.change_presence(status=discord.Status.online, activity=discord.Activity(type=discord.ActivityType.watching, name=account))
@@ -353,7 +387,7 @@ async def on_message(msg):
     channel=client.get_channel(chid)
     if client.user.id!=msg.author.id:
         if msg.content.lower()==".link" or msg.content.lower()=="/link":
-            Log(4,"link")
+            log(4,"link")
             global last_link
             global account
             facebook="https://www.facebook.com/governodelcambianiente"
@@ -367,6 +401,8 @@ async def on_message(msg):
             await channel.send(f"{msg.author.mention} LINK UTILI:\n{links}")
 
         if msg.content.lower()==".manual" or msg.content.lower()=="/manual":
+            channel=client.get_channel(msg.channel.id)
+            await client.delete_message(msg)
             global cnt
             if msg.author.id==364112598708387840:
                 print("Ok")
