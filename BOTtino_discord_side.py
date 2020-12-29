@@ -35,7 +35,7 @@ POS=pth+"last_pos.txt"
 
 if os.path.isfile(POS):
     src=open(POS,"r")
-    last_pos=float(src.read())
+    last_pos=int(src.read())
     src.close()
 else:
     print("No positivity file, quitting")
@@ -134,7 +134,7 @@ async def main(id_channel=id_channel, manual=False):
     try:
         while True:
             hour=int(datetime.datetime.now().strftime("%H"))
-            if hour<9 or hour>=22:
+            if hour<10 or hour>=22:
                 if sleeping==False:
                     await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening, name=authorized))
                     print(colored("+++NIGHT MODE STARTED+++","yellow","on_red"))
@@ -149,10 +149,7 @@ async def main(id_channel=id_channel, manual=False):
                     cnt=0
                     log(0,"night mode ended")
             if sleeping==False:
-                cnt+=1
-                page_link="https://www.instagram.com/{}/".format(account.replace("@",""))
-                options=Options()
-                options.add_argument("--headless")
+                cnt+=1cipryyyy/desktop-tutorial
                 browser=webdriver.Firefox(options=options, executable_path="/usr/local/bin/geckodriver_v0.28")
                 browser.get(page_link)
 
@@ -225,7 +222,7 @@ async def main(id_channel=id_channel, manual=False):
         log(3,"main function stopped, too many requests")
         print(colored("BOTTINO_UPDATE: main function stopped!","yellow"))
         await client.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening, name=authorized))
-        await asyncio.sleep(7200)              #Stop per tre ore
+        await asyncio.sleep(3600*4)              #Stop 4 hour
         await client.change_presence(status=discord.Status.online, activity=discord.Activity(type=discord.ActivityType.watching, name=account))
 
 
@@ -281,6 +278,14 @@ async def news():
                         log(1,f"news indexed {index} published")
 
                         if msg_type=="message":
+
+                            with open(news_path+file,"r") as f:
+                                message = await channel.send(incipit+f.read().replace("@notiziae","<https://t.me/notiziae>"))
+                                f.close()
+                                os.replace(f"{news_path}{file}", f"{bin_folder}{index}_{message.id}.txt")
+
+                        else:
+                            if msg_type!="caption":
                             srcfile=open(news_path+file,"r")
                             rfile=srcfile.read()
                             lines=rfile.split(sep="\n")
@@ -296,29 +301,20 @@ async def news():
                                         except ValueError:
                                             continue
                                 pos=round((values[0]/values[4])*100,1)
+                                last_pos_src=open(POS,"r")
+                                last_pos=float(last_pos_src.read())
+                                last_post_src.close()
 
-                            last_pos_src=open(POS,"r")
-                            last_pos=float(last_pos_src.read())
-                            last_post_src.close()
+                                lines.insert(3,f"Positività: {pos}% ({round(pos-last_pos,1):+})")
 
-                            lines.insert(3,f"Positività: {pos}% ({round(pos-last_pos,1):+})")
-
-                            saving=open(POS,"w")
-                            saving.write(pos)
-                            saving.close()
+                                saving=open(POS,"w")
+                                saving.write(pos)
+                                saving.close()
 
                             wfile=open(news_path+file,"w")
                             for line in lines:
                                 wfile.write(line+"\n")
                             wfile.close()
-
-                            with open(news_path+file,"r") as f:
-                                message = await channel.send(incipit+f.read().replace("@notiziae","<https://t.me/notiziae>"))
-                                f.close()
-                                os.replace(f"{news_path}{file}", f"{bin_folder}{index}_{message.id}.txt")
-
-                        else:
-                            if msg_type!="caption":
                                 caption_file=f"{news_path}caption_{channel_name}_{index}_{edited}.txt"
                                 if os.path.exists(caption_file)==True:
                                     caption=open(caption_file,"r")
@@ -399,10 +395,9 @@ async def on_message(msg):
             links+=f"Telegram:    <{telegram}>\n"
             links+=f"Ultimo post: <{last_link}>"
             await channel.send(f"{msg.author.mention} LINK UTILI:\n{links}")
-
         if msg.content.lower()==".manual" or msg.content.lower()=="/manual":
             channel=client.get_channel(msg.channel.id)
-            await client.delete_message(msg)
+            await msg.delete()
             global cnt
             if msg.author.id==364112598708387840:
                 print("Ok")
